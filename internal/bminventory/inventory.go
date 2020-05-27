@@ -237,23 +237,25 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 	id := strfmt.UUID(uuid.New().String())
 	url := installer.GetClusterURL{ClusterID: id}
 	log.Infof("Register cluster: %s with id %s", swag.StringValue(params.NewClusterParams.Name), id)
-	cluster := common.Cluster{Cluster: models.Cluster{
-		ID:                       &id,
-		Href:                     swag.String(url.String()),
-		Kind:                     swag.String(ResourceKindCluster),
-		APIVip:                   params.NewClusterParams.APIVip,
-		BaseDNSDomain:            params.NewClusterParams.BaseDNSDomain,
-		ClusterNetworkCidr:       params.NewClusterParams.ClusterNetworkCidr,
-		ClusterNetworkHostPrefix: params.NewClusterParams.ClusterNetworkHostPrefix,
-		DNSVip:                   params.NewClusterParams.DNSVip,
-		IngressVip:               params.NewClusterParams.IngressVip,
-		Name:                     swag.StringValue(params.NewClusterParams.Name),
-		OpenshiftVersion:         swag.StringValue(params.NewClusterParams.OpenshiftVersion),
-		PullSecret:               params.NewClusterParams.PullSecret,
-		ServiceNetworkCidr:       params.NewClusterParams.ServiceNetworkCidr,
-		SSHPublicKey:             params.NewClusterParams.SSHPublicKey,
-		UpdatedAt:                strfmt.DateTime{},
-	}}
+	cluster := common.Cluster{
+		Cluster: models.Cluster{
+			ID:                       &id,
+			Href:                     swag.String(url.String()),
+			Kind:                     swag.String(ResourceKindCluster),
+			APIVip:                   params.NewClusterParams.APIVip,
+			BaseDNSDomain:            params.NewClusterParams.BaseDNSDomain,
+			ClusterNetworkCidr:       params.NewClusterParams.ClusterNetworkCidr,
+			ClusterNetworkHostPrefix: params.NewClusterParams.ClusterNetworkHostPrefix,
+			DNSVip:                   params.NewClusterParams.DNSVip,
+			IngressVip:               params.NewClusterParams.IngressVip,
+			Name:                     swag.StringValue(params.NewClusterParams.Name),
+			OpenshiftVersion:         swag.StringValue(params.NewClusterParams.OpenshiftVersion),
+			ServiceNetworkCidr:       params.NewClusterParams.ServiceNetworkCidr,
+			SSHPublicKey:             params.NewClusterParams.SSHPublicKey,
+			UpdatedAt:                strfmt.DateTime{},
+		},
+		PullSecret: params.NewClusterParams.PullSecret,
+	}
 
 	err := b.clusterApi.RegisterCluster(ctx, &cluster)
 	if err != nil {
