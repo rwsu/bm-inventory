@@ -1222,11 +1222,6 @@ func init() {
             "4.5"
           ]
         },
-        "pull_secret": {
-          "description": "The pull secret that obtained from the Pull Secret page on the Red Hat OpenShift Cluster Manager site.",
-          "type": "string",
-          "x-go-custom-tag": "gorm:\"type:varchar(4096)\""
-        },
         "service_network_cidr": {
           "description": "The IP address pool to use for service IP addresses. You can enter only one IP address pool. If you need to access the services from an external network, configure load balancers and routers to manage the traffic.",
           "type": "string",
@@ -3300,11 +3295,6 @@ func init() {
             "4.4",
             "4.5"
           ]
-        },
-        "pull_secret": {
-          "description": "The pull secret that obtained from the Pull Secret page on the Red Hat OpenShift Cluster Manager site.",
-          "type": "string",
-          "x-go-custom-tag": "gorm:\"type:varchar(4096)\""
         },
         "service_network_cidr": {
           "description": "The IP address pool to use for service IP addresses. You can enter only one IP address pool. If you need to access the services from an external network, configure load balancers and routers to manage the traffic.",
