@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/filanov/bm-inventory/internal/common"
+
 	"github.com/filanov/bm-inventory/models"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -101,7 +103,7 @@ type InstallerConfigBaremetal struct {
 	SSHKey     string   `yaml:"sshKey"`
 }
 
-func countHostsByRole(cluster *models.Cluster, role string) int {
+func countHostsByRole(cluster *common.Cluster, role string) int {
 	var count int
 	for _, host := range cluster.Hosts {
 		if host.Role == role {
@@ -111,7 +113,7 @@ func countHostsByRole(cluster *models.Cluster, role string) int {
 	return count
 }
 
-func getMachineCIDR(cluster *models.Cluster) (string, error) {
+func getMachineCIDR(cluster *common.Cluster) (string, error) {
 	parsedVipAddr := net.ParseIP(string(cluster.APIVip))
 	if parsedVipAddr == nil {
 		errStr := fmt.Sprintf("Could not parse VIP ip %s", cluster.APIVip)
@@ -143,7 +145,7 @@ func getMachineCIDR(cluster *models.Cluster) (string, error) {
 	return "", errors.New(errStr)
 }
 
-func getBasicInstallConfig(cluster *models.Cluster, machineCIDR string) *InstallerConfigBaremetal {
+func getBasicInstallConfig(cluster *common.Cluster, machineCIDR string) *InstallerConfigBaremetal {
 	return &InstallerConfigBaremetal{
 		APIVersion: "v1",
 		BaseDomain: cluster.BaseDNSDomain,
@@ -206,7 +208,7 @@ func getDummyMAC(dummyMAC string, count int) (string, error) {
 	return hwMac.String(), nil
 }
 
-func setPlatformInstallconfig(cluster *models.Cluster, cfg *InstallerConfigBaremetal) error {
+func setPlatformInstallconfig(cluster *common.Cluster, cfg *InstallerConfigBaremetal) error {
 	// set hosts
 	numMasters := countHostsByRole(cluster, "master")
 	numWorkers := countHostsByRole(cluster, "worker")
@@ -255,7 +257,7 @@ func setPlatformInstallconfig(cluster *models.Cluster, cfg *InstallerConfigBarem
 	return nil
 }
 
-func GetInstallConfig(cluster *models.Cluster) ([]byte, error) {
+func GetInstallConfig(cluster *common.Cluster) ([]byte, error) {
 	machineCidr, err := getMachineCIDR(cluster)
 	if err != nil {
 		return nil, err

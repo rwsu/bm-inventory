@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"github.com/filanov/bm-inventory/internal/common"
 	"github.com/filanov/bm-inventory/models"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -35,9 +36,9 @@ type baseState struct {
 	db  *gorm.DB           //nolint:structcheck
 }
 
-func updateState(state string, statusInfo string, c *models.Cluster, db *gorm.DB, log logrus.FieldLogger) (*UpdateReply, error) {
+func updateState(state string, statusInfo string, c *common.Cluster, db *gorm.DB, log logrus.FieldLogger) (*UpdateReply, error) {
 	updates := map[string]interface{}{"status": state, "status_info": statusInfo}
-	dbReply := db.Model(&models.Cluster{}).Where("id = ? and status = ?",
+	dbReply := db.Model(&common.Cluster{}).Where("id = ? and status = ?",
 		c.ID.String(), swag.StringValue(c.Status)).Updates(updates)
 	if dbReply.Error != nil {
 		return nil, errors.Wrapf(dbReply.Error, "failed to update cluster %s state from %s to %s",
@@ -54,9 +55,9 @@ func updateState(state string, statusInfo string, c *models.Cluster, db *gorm.DB
 	}, nil
 }
 
-func getKnownMastersNodesIds(c *models.Cluster, db *gorm.DB) ([]*strfmt.UUID, error) {
+func getKnownMastersNodesIds(c *common.Cluster, db *gorm.DB) ([]*strfmt.UUID, error) {
 
-	var cluster models.Cluster
+	var cluster common.Cluster
 	var masterNodesIds []*strfmt.UUID
 	if err := db.Preload("Hosts").First(&cluster, "id = ?", c.ID).Error; err != nil {
 		return nil, errors.Errorf("cluster %s not found", c.ID)
@@ -69,7 +70,7 @@ func getKnownMastersNodesIds(c *models.Cluster, db *gorm.DB) ([]*strfmt.UUID, er
 	return masterNodesIds, nil
 }
 
-func mapMasterHostsByStatus(c *models.Cluster) map[string][]*models.Host {
+func mapMasterHostsByStatus(c *common.Cluster) map[string][]*models.Host {
 	hostMap := make(map[string][]*models.Host)
 
 	for _, host := range c.Hosts {

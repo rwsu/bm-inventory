@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/filanov/bm-inventory/internal/common"
 	"github.com/filanov/bm-inventory/models"
 	"github.com/go-openapi/strfmt"
 	. "github.com/onsi/ginkgo"
@@ -32,11 +33,11 @@ var _ = Describe("inventory", func() {
 		return ret
 	}
 
-	createCluster := func(apiVip string, inventories ...string) *models.Cluster {
-		return &models.Cluster{
+	createCluster := func(apiVip string, inventories ...string) *common.Cluster {
+		return &common.Cluster{Cluster: models.Cluster{
 			APIVip: strfmt.IPv4(apiVip),
 			Hosts:  createHosts(inventories...),
-		}
+		}}
 	}
 
 	It("happpy flow", func() {

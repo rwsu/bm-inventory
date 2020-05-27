@@ -140,7 +140,7 @@ func NewBareMetalInventory(
 }
 
 // create discovery image generation job, return job name and error
-func (b *bareMetalInventory) createImageJob(cluster *models.Cluster, jobName, imgName, ignitionConfig string) *batch.Job {
+func (b *bareMetalInventory) createImageJob(cluster *common.Cluster, jobName, imgName, ignitionConfig string) *batch.Job {
 	return &batch.Job{
 		TypeMeta: meta.TypeMeta{
 			Kind:       "Job",
@@ -199,7 +199,7 @@ func (b *bareMetalInventory) createImageJob(cluster *models.Cluster, jobName, im
 	}
 }
 
-func (b *bareMetalInventory) formatIgnitionFile(cluster *models.Cluster, params installer.GenerateClusterISOParams) (string, error) {
+func (b *bareMetalInventory) formatIgnitionFile(cluster *common.Cluster, params installer.GenerateClusterISOParams) (string, error) {
 	var ignitionParams = map[string]string{
 		"userSshKey":     b.getUserSshKey(params),
 		"AgentDockerImg": b.AgentDockerImg,
@@ -237,7 +237,7 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 	id := strfmt.UUID(uuid.New().String())
 	url := installer.GetClusterURL{ClusterID: id}
 	log.Infof("Register cluster: %s with id %s", swag.StringValue(params.NewClusterParams.Name), id)
-	cluster := models.Cluster{
+	cluster := common.Cluster{Cluster: models.Cluster{
 		ID:                       &id,
 		Href:                     swag.String(url.String()),
 		Kind:                     swag.String(ResourceKindCluster),
@@ -253,7 +253,7 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 		ServiceNetworkCidr:       params.NewClusterParams.ServiceNetworkCidr,
 		SSHPublicKey:             params.NewClusterParams.SSHPublicKey,
 		UpdatedAt:                strfmt.DateTime{},
-	}
+	}}
 
 	err := b.clusterApi.RegisterCluster(ctx, &cluster)
 	if err != nil {
@@ -262,12 +262,12 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
 	}
 
-	return installer.NewRegisterClusterCreated().WithPayload(&cluster)
+	return installer.NewRegisterClusterCreated().WithPayload(&cluster.Cluster)
 }
 
 func (b *bareMetalInventory) DeregisterCluster(ctx context.Context, params installer.DeregisterClusterParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	var cluster models.Cluster
+	var cluster common.Cluster
 
 	if err := b.db.First(&cluster, "id = ?", params.ClusterID).Error; err != nil {
 		return installer.NewDeregisterClusterNotFound().
@@ -286,7 +286,7 @@ func (b *bareMetalInventory) DeregisterCluster(ctx context.Context, params insta
 
 func (b *bareMetalInventory) DownloadClusterISO(ctx context.Context, params installer.DownloadClusterISOParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	if err := b.db.First(&models.Cluster{}, "id = ?", params.ClusterID).Error; err != nil {
+	if err := b.db.First(&common.Cluster{}, "id = ?", params.ClusterID).Error; err != nil {
 		log.WithError(err).Errorf("failed to get cluster %s", params.ClusterID)
 		return installer.NewDownloadClusterISONotFound().
 			WithPayload(common.GenerateError(http.StatusNotFound, err))
@@ -321,7 +321,7 @@ func (b *bareMetalInventory) DownloadClusterISO(ctx context.Context, params inst
 func (b *bareMetalInventory) GenerateClusterISO(ctx context.Context, params installer.GenerateClusterISOParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
 	log.Infof("prepare image for cluster %s", params.ClusterID)
-	var cluster models.Cluster
+	var cluster common.Cluster
 
 	tx := b.db.Begin()
 	defer func() {
@@ -405,7 +405,7 @@ func (b *bareMetalInventory) GenerateClusterISO(ctx context.Context, params inst
 	}
 
 	log.Infof("Generated cluster <%s> image with ignition config %s", params.ClusterID, ignitionConfig)
-	return installer.NewGenerateClusterISOCreated().WithPayload(&cluster)
+	return installer.NewGenerateClusterISOCreated().WithPayload(&cluster.Cluster)
 }
 
 func getImageName(clusterID strfmt.UUID) string {
@@ -414,7 +414,7 @@ func getImageName(clusterID strfmt.UUID) string {
 
 func (b *bareMetalInventory) InstallCluster(ctx context.Context, params installer.InstallClusterParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	var cluster models.Cluster
+	var cluster common.Cluster
 	var err error
 
 	tx := b.db.Begin()
@@ -472,10 +472,10 @@ func (b *bareMetalInventory) InstallCluster(ctx context.Context, params installe
 		return installer.NewInstallClusterInternalServerError().
 			WithPayload(common.GenerateInternalFromError(err))
 	}
-	return installer.NewInstallClusterAccepted().WithPayload(&cluster)
+	return installer.NewInstallClusterAccepted().WithPayload(&cluster.Cluster)
 }
 
-func (b *bareMetalInventory) setBootstrapHost(ctx context.Context, cluster models.Cluster, db *gorm.DB) error {
+func (b *bareMetalInventory) setBootstrapHost(ctx context.Context, cluster common.Cluster, db *gorm.DB) error {
 	log := logutil.FromContext(ctx, b.log)
 
 	masterNodesIds, err := b.clusterApi.GetMasterNodesIds(ctx, &cluster, db)
@@ -497,7 +497,7 @@ func (b *bareMetalInventory) setBootstrapHost(ctx context.Context, cluster model
 	return nil
 }
 
-func (b *bareMetalInventory) generateClusterInstallConfig(ctx context.Context, cluster models.Cluster) error {
+func (b *bareMetalInventory) generateClusterInstallConfig(ctx context.Context, cluster common.Cluster) error {
 	log := logutil.FromContext(ctx, b.log)
 
 	cfg, err := installcfg.GetInstallConfig(&cluster)
@@ -520,7 +520,7 @@ func (b *bareMetalInventory) generateClusterInstallConfig(ctx context.Context, c
 
 func (b *bareMetalInventory) UpdateCluster(ctx context.Context, params installer.UpdateClusterParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	var cluster models.Cluster
+	var cluster common.Cluster
 	log.Info("update cluster ", params.ClusterID)
 
 	tx := b.db.Begin()
@@ -600,29 +600,33 @@ func (b *bareMetalInventory) UpdateCluster(ctx context.Context, params installer
 			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
 	}
 
-	return installer.NewUpdateClusterCreated().WithPayload(&cluster)
+	return installer.NewUpdateClusterCreated().WithPayload(&cluster.Cluster)
 }
 
 func (b *bareMetalInventory) ListClusters(ctx context.Context, params installer.ListClustersParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	var clusters []*models.Cluster
+	var clusters []*common.Cluster
 	if err := b.db.Preload("Hosts").Find(&clusters).Error; err != nil {
 		log.WithError(err).Error("failed to list clusters")
 		return installer.NewListClustersInternalServerError().
 			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
 	}
+	var mClusters []*models.Cluster = make([]*models.Cluster, len(clusters))
+	for i, c := range clusters {
+		mClusters[i] = &c.Cluster
+	}
 
-	return installer.NewListClustersOK().WithPayload(clusters)
+	return installer.NewListClustersOK().WithPayload(mClusters)
 }
 
 func (b *bareMetalInventory) GetCluster(ctx context.Context, params installer.GetClusterParams) middleware.Responder {
-	var cluster models.Cluster
+	var cluster common.Cluster
 	if err := b.db.Preload("Hosts").First(&cluster, "id = ?", params.ClusterID).Error; err != nil {
 		// TODO: check for the right error
 		return installer.NewGetClusterNotFound().
 			WithPayload(common.GenerateError(http.StatusNotFound, err))
 	}
-	return installer.NewGetClusterOK().WithPayload(&cluster)
+	return installer.NewGetClusterOK().WithPayload(&cluster.Cluster)
 }
 
 func (b *bareMetalInventory) RegisterHost(ctx context.Context, params installer.RegisterHostParams) middleware.Responder {
@@ -630,7 +634,7 @@ func (b *bareMetalInventory) RegisterHost(ctx context.Context, params installer.
 	var host models.Host
 	log.Infof("Register host: %+v", params)
 
-	if err := b.db.First(&models.Cluster{}, "id = ?", params.ClusterID.String()).Error; err != nil {
+	if err := b.db.First(&common.Cluster{}, "id = ?", params.ClusterID.String()).Error; err != nil {
 		log.WithError(err).Errorf("failed to get cluster: %s", params.ClusterID.String())
 		return installer.NewRegisterHostBadRequest().
 			WithPayload(common.GenerateError(http.StatusBadRequest, err))
@@ -863,7 +867,7 @@ func (b *bareMetalInventory) EnableHost(ctx context.Context, params installer.En
 	return installer.NewEnableHostNoContent()
 }
 
-func (b *bareMetalInventory) createKubeconfigJob(cluster *models.Cluster, jobName string, cfg []byte) *batch.Job {
+func (b *bareMetalInventory) createKubeconfigJob(cluster *common.Cluster, jobName string, cfg []byte) *batch.Job {
 	id := cluster.ID
 	overrideImageName := "registry.svc.ci.openshift.org/ocp/release:4.5.0-0.ci-2020-05-29-203954"
 	if cluster.OpenshiftVersion == models.ClusterOpenshiftVersionNr44 {
@@ -941,7 +945,7 @@ func (b *bareMetalInventory) createKubeconfigJob(cluster *models.Cluster, jobNam
 
 func (b *bareMetalInventory) DownloadClusterFiles(ctx context.Context, params installer.DownloadClusterFilesParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	var cluster models.Cluster
+	var cluster common.Cluster
 
 	if err := b.db.First(&cluster, "id = ?", params.ClusterID).Error; err != nil {
 		log.WithError(err).Errorf("failed to find cluster %s", params.ClusterID)
@@ -1002,7 +1006,7 @@ func (b *bareMetalInventory) DownloadClusterKubeconfig(ctx context.Context, para
 
 func (b *bareMetalInventory) GetCredentials(ctx context.Context, params installer.GetCredentialsParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	var cluster models.Cluster
+	var cluster common.Cluster
 
 	if err := b.db.First(&cluster, "id = ?", params.ClusterID).Error; err != nil {
 		log.WithError(err).Errorf("failed to find cluster %s", params.ClusterID)

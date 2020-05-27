@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/filanov/bm-inventory/internal/common"
 	"github.com/filanov/bm-inventory/internal/events"
 	"github.com/filanov/bm-inventory/pkg/filemiddleware"
 
@@ -42,7 +43,7 @@ func prepareDB() *gorm.DB {
 	db, err := gorm.Open("sqlite3", ":memory:")
 	Expect(err).ShouldNot(HaveOccurred())
 	//db = db.Debug()
-	db.AutoMigrate(&models.Cluster{}, &models.Host{})
+	db.AutoMigrate(&common.Cluster{}, &models.Host{})
 	return db
 }
 
@@ -77,11 +78,11 @@ var _ = Describe("GenerateClusterISO", func() {
 		bm = NewBareMetalInventory(db, getTestLog(), nil, nil, cfg, mockJob, mockEvents, nil)
 	})
 
-	registerCluster := func() *models.Cluster {
+	registerCluster := func() *common.Cluster {
 		clusterId := strfmt.UUID(uuid.New().String())
-		cluster := models.Cluster{
+		cluster := common.Cluster{Cluster: models.Cluster{
 			ID: &clusterId,
-		}
+		}}
 		Expect(db.Create(&cluster).Error).ShouldNot(HaveOccurred())
 		return &cluster
 	}
@@ -360,10 +361,10 @@ var _ = Describe("cluster", func() {
 	Context("Install", func() {
 		BeforeEach(func() {
 			clusterID = strfmt.UUID(uuid.New().String())
-			err := db.Create(&models.Cluster{
+			err := db.Create(&common.Cluster{Cluster: models.Cluster{
 				ID:     &clusterID,
 				APIVip: "10.11.12.13",
-			}).Error
+			}}).Error
 			Expect(err).ShouldNot(HaveOccurred())
 
 			addHost(masterHostId1, "master", "known", clusterID, getInventoryStr("1.2.3.4/24"), db)

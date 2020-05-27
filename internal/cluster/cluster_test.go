@@ -13,6 +13,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/sirupsen/logrus"
 
+	"github.com/filanov/bm-inventory/internal/common"
 	"github.com/filanov/bm-inventory/models"
 
 	. "github.com/onsi/ginkgo"
@@ -24,7 +25,7 @@ var _ = Describe("stateMachine", func() {
 		ctx        = context.Background()
 		db         *gorm.DB
 		state      API
-		cluster    models.Cluster
+		cluster    common.Cluster
 		stateReply *UpdateReply
 		stateErr   error
 	)
@@ -33,10 +34,10 @@ var _ = Describe("stateMachine", func() {
 		db = prepareDB()
 		state = NewManager(getTestLog(), db, nil)
 		id := strfmt.UUID(uuid.New().String())
-		cluster = models.Cluster{
+		cluster = common.Cluster{Cluster: models.Cluster{
 			ID:     &id,
 			Status: swag.String("not a known state"),
-		}
+		}}
 		Expect(db.Create(&cluster).Error).ShouldNot(HaveOccurred())
 	})
 
@@ -72,7 +73,7 @@ var _ = Describe("cluster monitor", func() {
 	var (
 		//ctx        = context.Background()
 		db         *gorm.DB
-		c          models.Cluster
+		c          common.Cluster
 		id         strfmt.UUID
 		err        error
 		clusterApi *Manager
@@ -87,10 +88,10 @@ var _ = Describe("cluster monitor", func() {
 	Context("from installing state", func() {
 
 		BeforeEach(func() {
-			c = models.Cluster{
+			c = common.Cluster{Cluster: models.Cluster{
 				ID:     &id,
 				Status: swag.String("installing"),
-			}
+			}}
 
 			Expect(db.Create(&c).Error).ShouldNot(HaveOccurred())
 			Expect(err).ShouldNot(HaveOccurred())
@@ -173,10 +174,10 @@ var _ = Describe("cluster monitor", func() {
 		Context("from insufficient state", func() {
 			BeforeEach(func() {
 
-				c = models.Cluster{
+				c = common.Cluster{Cluster: models.Cluster{
 					ID:     &id,
 					Status: swag.String("insufficient"),
-				}
+				}}
 
 				Expect(db.Create(&c).Error).ShouldNot(HaveOccurred())
 				Expect(err).ShouldNot(HaveOccurred())
@@ -216,10 +217,10 @@ var _ = Describe("cluster monitor", func() {
 		Context("from ready state", func() {
 			BeforeEach(func() {
 
-				c = models.Cluster{
+				c = common.Cluster{Cluster: models.Cluster{
 					ID:     &id,
 					Status: swag.String("ready"),
-				}
+				}}
 
 				Expect(db.Create(&c).Error).ShouldNot(HaveOccurred())
 				Expect(err).ShouldNot(HaveOccurred())
@@ -280,7 +281,7 @@ func createHost(clusterId strfmt.UUID, state string, db *gorm.DB) {
 func prepareDB() *gorm.DB {
 	db, err := gorm.Open("sqlite3", ":memory:")
 	Expect(err).ShouldNot(HaveOccurred())
-	db.AutoMigrate(&models.Cluster{})
+	db.AutoMigrate(&common.Cluster{})
 	db.AutoMigrate(&models.Host{})
 	return db
 }
@@ -296,8 +297,8 @@ func getTestLog() logrus.FieldLogger {
 	return l
 }
 
-func geCluster(clusterId strfmt.UUID, db *gorm.DB) models.Cluster {
-	var cluster models.Cluster
+func geCluster(clusterId strfmt.UUID, db *gorm.DB) common.Cluster {
+	var cluster common.Cluster
 	Expect(db.Preload("Hosts").First(&cluster, "id = ?", clusterId).Error).ShouldNot(HaveOccurred())
 	return cluster
 }

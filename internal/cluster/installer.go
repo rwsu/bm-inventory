@@ -3,13 +3,13 @@ package cluster
 import (
 	context "context"
 
+	"github.com/filanov/bm-inventory/internal/common"
 	"github.com/go-openapi/strfmt"
 
 	"github.com/pkg/errors"
 
 	"github.com/go-openapi/swag"
 
-	"github.com/filanov/bm-inventory/models"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +26,7 @@ type installer struct {
 	db  *gorm.DB
 }
 
-func (i *installer) Install(ctx context.Context, c *models.Cluster, db *gorm.DB) error {
+func (i *installer) Install(ctx context.Context, c *common.Cluster, db *gorm.DB) error {
 
 	switch swag.StringValue(c.Status) {
 	case "":
@@ -52,6 +52,6 @@ func (i *installer) Install(ctx context.Context, c *models.Cluster, db *gorm.DB)
 	return nil
 }
 
-func (i *installer) GetMasterNodesIds(ctx context.Context, cluster *models.Cluster, db *gorm.DB) ([]*strfmt.UUID, error) {
+func (i *installer) GetMasterNodesIds(ctx context.Context, cluster *common.Cluster, db *gorm.DB) ([]*strfmt.UUID, error) {
 	return getKnownMastersNodesIds(cluster, db)
 }

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/filanov/bm-inventory/internal/common"
+
 	"github.com/filanov/bm-inventory/internal/events"
 	awsS3Client "github.com/filanov/bm-inventory/pkg/s3Client"
 
@@ -76,7 +78,7 @@ func main() {
 		log.Fatal("failed to create client:", err)
 	}
 
-	if err = db.AutoMigrate(&models.Host{}, &models.Cluster{}, &events.Event{}).Error; err != nil {
+	if err = db.AutoMigrate(&models.Host{}, &common.Cluster{}, &events.Event{}).Error; err != nil {
 		log.Fatal("failed to auto migrate, ", err)
 	}
 
