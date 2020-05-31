@@ -1116,6 +1116,9 @@ definitions:
         format: date-time
         x-go-custom-tag: gorm:"type:datetime;default:0"
         description: The time that this cluster completed installation.
+      pull_secret_set:
+        type: boolean
+        description: True if the pull-secret has been added to the cluster
 
   image_info:
     type: object
