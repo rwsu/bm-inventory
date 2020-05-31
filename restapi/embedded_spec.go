@@ -984,38 +984,6 @@ func init() {
         }
       }
     },
-    "/events/{entity_id}": {
-      "get": {
-        "tags": [
-          "events"
-        ],
-        "summary": "Lists events for an entity_id",
-        "operationId": "ListEvents",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "uuid",
-            "name": "entity_id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success.",
-            "schema": {
-              "$ref": "#/definitions/event-list"
-            }
-          },
-          "500": {
-            "description": "Error.",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      }
-    },
     "/clusters/{cluster_id}/uploads/ingress-cert": {
       "post": {
         "tags": [
@@ -1054,6 +1022,38 @@ func init() {
             "description": "Error.",
             "schema": {
               "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
+    },
+    "/events/{entity_id}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Lists events for an entity_id",
+        "operationId": "ListEvents",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "name": "entity_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "schema": {
+              "$ref": "#/definitions/event-list"
             }
           },
           "500": {
@@ -1221,6 +1221,10 @@ func init() {
             "4.4",
             "4.5"
           ]
+        },
+        "pull_secret_set": {
+          "description": "True if the pull-secret has been added to the cluster",
+          "type": "boolean"
         },
         "service_network_cidr": {
           "description": "The IP address pool to use for service IP addresses. You can enter only one IP address pool. If you need to access the services from an external network, configure load balancers and routers to manage the traffic.",
@@ -3042,38 +3046,6 @@ func init() {
         }
       }
     },
-    "/events/{entity_id}": {
-      "get": {
-        "tags": [
-          "events"
-        ],
-        "summary": "Lists events for an entity_id",
-        "operationId": "ListEvents",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "uuid",
-            "name": "entity_id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success.",
-            "schema": {
-              "$ref": "#/definitions/event-list"
-            }
-          },
-          "500": {
-            "description": "Error.",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      }
-    },
     "/clusters/{cluster_id}/uploads/ingress-cert": {
       "post": {
         "tags": [
@@ -3112,6 +3084,38 @@ func init() {
             "description": "Error.",
             "schema": {
               "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
+    },
+    "/events/{entity_id}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Lists events for an entity_id",
+        "operationId": "ListEvents",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "name": "entity_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "schema": {
+              "$ref": "#/definitions/event-list"
             }
           },
           "500": {
@@ -3295,6 +3299,10 @@ func init() {
             "4.4",
             "4.5"
           ]
+        },
+        "pull_secret_set": {
+          "description": "True if the pull-secret has been added to the cluster",
+          "type": "boolean"
         },
         "service_network_cidr": {
           "description": "The IP address pool to use for service IP addresses. You can enter only one IP address pool. If you need to access the services from an external network, configure load balancers and routers to manage the traffic.",
