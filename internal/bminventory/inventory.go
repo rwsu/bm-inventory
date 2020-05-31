@@ -254,8 +254,8 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 			SSHPublicKey:             params.NewClusterParams.SSHPublicKey,
 			UpdatedAt:                strfmt.DateTime{},
 		},
-		PullSecret: params.NewClusterParams.PullSecret,
 	}
+	setPullSecret(&cluster, params.NewClusterParams.PullSecret)
 
 	err := b.clusterApi.RegisterCluster(ctx, &cluster)
 	if err != nil {
@@ -552,9 +552,9 @@ func (b *bareMetalInventory) UpdateCluster(ctx context.Context, params installer
 	cluster.ClusterNetworkHostPrefix = params.ClusterUpdateParams.ClusterNetworkHostPrefix
 	cluster.DNSVip = params.ClusterUpdateParams.DNSVip
 	cluster.IngressVip = params.ClusterUpdateParams.IngressVip
-	cluster.PullSecret = params.ClusterUpdateParams.PullSecret
 	cluster.ServiceNetworkCidr = params.ClusterUpdateParams.ServiceNetworkCidr
 	cluster.SSHPublicKey = params.ClusterUpdateParams.SSHPublicKey
+	setPullSecret(&cluster, params.ClusterUpdateParams.PullSecret)
 
 	if err := tx.Model(&cluster).Update(cluster).Error; err != nil {
 		tx.Rollback()
@@ -1163,4 +1163,13 @@ func mergeIngressCaIntoKubeconfig(kubeconfigData []byte, ingressCa []byte, log l
 		return nil, errors.Wrap(err, "failed to convert kubeconfig")
 	}
 	return kconfigAsByteArray, nil
+}
+
+func setPullSecret(cluster *common.Cluster, pullSecret string) {
+	cluster.PullSecret = pullSecret
+	if pullSecret != "" {
+		cluster.PullSecretSet = true
+	} else {
+		cluster.PullSecretSet = false
+	}
 }
