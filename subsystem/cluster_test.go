@@ -331,7 +331,11 @@ var _ = Describe("system-test cluster install", func() {
 				NewClusterParams: &models.ClusterCreateParams{
 					Name:             swag.String("test cluster"),
 					OpenshiftVersion: swag.String("4.5"),
-				},
+					BaseDNSDomain:    "redhat",
+					ClusterNetworkCidr: swag.String("10.128.0.0/14"),
+					ClusterNetworkHostPrefix: 23,
+					ServiceNetworkCidr: swag.String("172.30.0.0/16'"),
+					},
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(swag.StringValue(cluster.GetPayload().Status)).Should(Equal("insufficient"))
