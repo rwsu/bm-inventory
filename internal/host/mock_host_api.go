@@ -6,11 +6,10 @@ package host
 
 import (
 	context "context"
-	reflect "reflect"
-
 	models "github.com/filanov/bm-inventory/models"
 	gomock "github.com/golang/mock/gomock"
 	gorm "github.com/jinzhu/gorm"
+	reflect "reflect"
 )
 
 // MockStateAPI is a mock of StateAPI interface
@@ -214,6 +213,20 @@ func (m *MockAPI) RegisterHost(ctx context.Context, h *models.Host) error {
 func (mr *MockAPIMockRecorder) RegisterHost(ctx, h interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterHost", reflect.TypeOf((*MockAPI)(nil).RegisterHost), ctx, h)
+}
+
+// HandleInstallationFailure mocks base method
+func (m *MockAPI) HandleInstallationFailure(ctx context.Context, h *models.Host) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HandleInstallationFailure", ctx, h)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// HandleInstallationFailure indicates an expected call of HandleInstallationFailure
+func (mr *MockAPIMockRecorder) HandleInstallationFailure(ctx, h interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleInstallationFailure", reflect.TypeOf((*MockAPI)(nil).HandleInstallationFailure), ctx, h)
 }
 
 // UpdateHwInfo mocks base method

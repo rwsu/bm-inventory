@@ -64,6 +64,7 @@ const (
 type API interface {
 	// Register a new host
 	RegisterHost(ctx context.Context, h *models.Host) error
+	HandleInstallationFailure(ctx context.Context, h *models.Host) error
 	StateAPI
 	InstructionApi
 	SpecificHardwareParams
@@ -147,6 +148,23 @@ func (m *Manager) RegisterHost(ctx context.Context, h *models.Host) error {
 	}
 
 	return m.sm.Run(TransitionTypeRegisterHost, newStateHost(pHost), &TransitionArgsRegisterHost{
+		ctx: ctx,
+	})
+}
+
+func (m *Manager) HandleInstallationFailure(ctx context.Context, h *models.Host) error {
+	var host models.Host
+	err := m.db.First(&host, "id = ? and cluster_id = ?", *h.ID, h.ClusterID).Error
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
+		return err
+	}
+
+	pHost := &host
+	if err != nil && gorm.IsRecordNotFoundError(err) {
+		pHost = h
+	}
+
+	return m.sm.Run(TransitionTypeHostInstallaionFailed, newStateHost(pHost), &TransitionArgsHostInstallationFailed{
 		ctx: ctx,
 	})
 }

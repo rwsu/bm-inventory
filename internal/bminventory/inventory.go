@@ -958,22 +958,27 @@ func (b *bareMetalInventory) PostStepReply(ctx context.Context, params installer
 	log.Infof("Received step reply <%s> from cluster <%s> host <%s>  exit-code <%d> stdout <%s> stderr <%s>", params.Reply.StepID, params.ClusterID,
 		params.HostID, params.Reply.ExitCode, params.Reply.Output, params.Reply.Error)
 
-	//check the output exit code
-	if params.Reply.ExitCode != 0 {
-		err = fmt.Errorf("Exit code is %d reply error is %s for %s reply for host %s cluster %s",
-			params.Reply.ExitCode, params.Reply.Error, params.Reply.StepID, params.HostID, params.ClusterID)
-		log.WithError(err).Errorf("Exit code is <%d> , reply error is <%s> for <%s> reply for host <%s> cluster <%s>",
-			params.Reply.ExitCode, params.Reply.Error, params.Reply.StepID, params.HostID, params.ClusterID)
-		return installer.NewPostStepReplyBadRequest().
-			WithPayload(common.GenerateError(http.StatusBadRequest, err))
-	}
-
 	var host models.Host
 	if err = b.db.First(&host, "id = ? and cluster_id = ?", params.HostID, params.ClusterID).Error; err != nil {
 		log.WithError(err).Errorf("Failed to find host <%s> cluster <%s> step <%s>",
 			params.HostID, params.ClusterID, params.Reply.StepID)
 		return installer.NewPostStepReplyNotFound().
 			WithPayload(common.GenerateError(http.StatusNotFound, err))
+	}
+
+	//check the output exit code
+	if params.Reply.ExitCode != 0 {
+		err = fmt.Errorf("Exit code is %d reply error is %s for %s reply for host %s cluster %s",
+			params.Reply.ExitCode, params.Reply.Error, params.Reply.StepID, params.HostID, params.ClusterID)
+		log.WithError(err).Errorf("Exit code is <%d> , reply error is <%s> for <%s> reply for host <%s> cluster <%s>",
+			params.Reply.ExitCode, params.Reply.Error, params.Reply.StepID, params.HostID, params.ClusterID)
+		//if it's install step - need to move host to error
+		handlingError := handleInstallationError(params, b, ctx, host)
+		if handlingError != nil {
+			log.WithError(err).Errorf("Failed handling installation error for host <%s> cluster <%s>", params.HostID, params.ClusterID)
+		}
+		return installer.NewPostStepReplyBadRequest().
+			WithPayload(common.GenerateError(http.StatusBadRequest, err))
 	}
 
 	var stepReply string
@@ -994,6 +999,14 @@ func (b *bareMetalInventory) PostStepReply(ctx context.Context, params installer
 	}
 
 	return installer.NewPostStepReplyNoContent()
+}
+
+func handleInstallationError(params installer.PostStepReplyParams, b *bareMetalInventory, ctx context.Context, host models.Host) error {
+
+	if strings.HasPrefix(params.Reply.StepID, string(models.StepTypeExecute)) {
+		return b.hostApi.HandleInstallationFailure(ctx, &host)
+	}
+	return nil
 }
 
 func handleReplyByType(params installer.PostStepReplyParams, b *bareMetalInventory, ctx context.Context, host models.Host, stepReply string) error {

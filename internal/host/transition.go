@@ -28,6 +28,10 @@ type TransitionArgsRegisterHost struct {
 	ctx context.Context
 }
 
+type TransitionArgsHostInstallationFailed struct {
+	ctx context.Context
+}
+
 func (th *transitionHandler) PostRegisterHost(sw stateswitch.StateSwitch, args stateswitch.TransitionArgs) error {
 	sHost, ok := sw.(*stateHost)
 	if !ok {
@@ -64,4 +68,17 @@ func (th *transitionHandler) PostRegisterDuringInstallation(sw stateswitch.State
 	}
 	return updateHostStateWithParams(logutil.FromContext(params.ctx, th.log), sHost.srcState,
 		"Tried to register during installation", sHost.host, th.db)
+}
+
+func (th *transitionHandler) PostHostInstallationFailed(sw stateswitch.StateSwitch, args stateswitch.TransitionArgs) error {
+	sHost, ok := sw.(*stateHost)
+	if !ok {
+		return errors.New("HostInstallationFailed incompatible type of StateSwitch")
+	}
+	params, ok := args.(*TransitionArgsHostInstallationFailed)
+	if !ok {
+		return errors.New("HostInstallationFailed invalid argument")
+	}
+	return updateHostStateWithParams(logutil.FromContext(params.ctx, th.log), sHost.srcState,
+		"installation command failed", sHost.host, th.db)
 }
