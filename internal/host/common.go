@@ -1,6 +1,7 @@
 package host
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-openapi/strfmt"
@@ -111,7 +112,8 @@ func updateHwInfo(log logrus.FieldLogger, hwValidator hardware.Validator, h *mod
 
 func getCluster(clusterID strfmt.UUID, db *gorm.DB) (*models.Cluster, error) {
 	var cluster models.Cluster
-	if err := db.Preload("Hosts").First(&cluster, "id = ?", clusterID).Error; err != nil {
+	if err := db.Preload("Hosts", "status <> ?", HostStatusDisabled).First(&cluster, "id = ?", clusterID).Error; err != nil {
+		fmt.Printf("BUUUUUUUUUUUUUUUUUUU %e", err)
 		return nil, err
 	}
 	return &cluster, nil

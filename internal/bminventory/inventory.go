@@ -528,7 +528,7 @@ func (c clusterInstaller) validateHostsInventory(cluster *models.Cluster) error 
 func (c clusterInstaller) install(tx *gorm.DB) error {
 	var cluster models.Cluster
 	var err error
-	if err = tx.Preload("Hosts").First(&cluster, "id = ?", c.params.ClusterID).Error; err != nil {
+	if err = tx.Preload("Hosts", "status <> ?", host.HostStatusDisabled).First(&cluster, "id = ?", c.params.ClusterID).Error; err != nil {
 		return common.NewApiError(http.StatusNotFound, err)
 	}
 	if err = c.verifyClusterNetworkConfig(&cluster, tx); err != nil {
