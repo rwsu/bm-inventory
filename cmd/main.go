@@ -79,27 +79,6 @@ func main() {
 
 	log.Println("Starting bm service")
 
-	var kclient client.Client
-	if Options.UseK8s {
-		if err = s3wrapper.CreateBucket(&Options.S3Config); err != nil {
-			log.Fatal(err)
-		}
-
-		scheme := runtime.NewScheme()
-		if err = clientgoscheme.AddToScheme(scheme); err != nil {
-			log.Fatal("Failed to add K8S scheme", err)
-		}
-
-		kclient, err = client.New(config.GetConfigOrDie(), client.Options{Scheme: scheme})
-		if err != nil && Options.UseK8s {
-			log.Fatal("failed to create client:", err)
-		}
-
-	} else {
-		log.Println("running drone test, skipping S3")
-		kclient = nil
-	}
-
 	db, err := gorm.Open("mysql",
 		fmt.Sprintf("admin:admin@tcp(%s:%s)/installer?charset=utf8&parseTime=True&loc=Local",
 			Options.DBHost, Options.DBPort))
@@ -141,10 +120,39 @@ func main() {
 		log.Fatal("Failed to setup S3 client", err)
 	}
 
-	jobApi := job.New(log.WithField("pkg", "k8s-job-wrapper"), kclient, Options.JobConfig)
 	prometheusRegistry := prometheus.DefaultRegisterer
 	metricsManager := metrics.NewMetricsManager(log.WithField("pkg", "metrics"), prometheusRegistry)
+	log.Println("Target: " + Options.Target)
 
+	var jobAPI job.API
+
+	if Options.Target == "disconnected" || Options.UseK8s {
+		if err = s3wrapper.CreateBucket(&Options.S3Config); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if Options.Target != "disconnected" {
+
+		var kclient client.Client
+		if Options.UseK8s {
+			scheme := runtime.NewScheme()
+			if err = clientgoscheme.AddToScheme(scheme); err != nil {
+				log.Fatal("Failed to add K8S scheme", err)
+			}
+
+			kclient, err = client.New(config.GetConfigOrDie(), client.Options{Scheme: scheme})
+			if err != nil && Options.UseK8s {
+				log.Fatal("failed to create client:", err)
+			}
+
+		} else {
+			log.Println("running drone test, skipping S3")
+			kclient = nil
+		}
+
+		jobAPI = job.New(log.WithField("pkg", "k8s-job-wrapper"), kclient, Options.JobConfig)
+	}
 	bm := bminventory.NewBareMetalInventory(db, log.WithField("pkg", "Inventory"), hostApi, clusterApi, Options.BMConfig, jobApi, eventsHandler, s3Client, metricsManager)
 
 	events := events.NewApi(eventsHandler, logrus.WithField("pkg", "eventsApi"))
