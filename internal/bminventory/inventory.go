@@ -431,17 +431,6 @@ func (b *bareMetalInventory) GenerateClusterISO(ctx context.Context, params inst
 		return installer.NewGenerateClusterISOInternalServerError()
 	}
 	txSuccess = true
-
-	// Kill the previous job in case it's still running
-	prevJobName := fmt.Sprintf("createimage-%s-%s", cluster.ID, previousCreatedAt.Format("20060102150405"))
-	log.Info("Attempting to delete job %s", prevJobName)
-	if err := b.job.Delete(ctx, prevJobName, b.Namespace); err != nil {
-		log.WithError(err).Errorf("failed to kill previous job in cluster %s", cluster.ID)
-		return installer.NewGenerateClusterISOInternalServerError().
-			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
-	}
-	log.Info("Finished attempting to delete job %s", prevJobName)
-
 	ignitionConfig, formatErr := b.formatIgnitionFile(&cluster, params)
 	if formatErr != nil {
 		log.WithError(formatErr).Errorf("failed to format ignition config file for cluster %s", cluster.ID)
@@ -470,7 +459,17 @@ func (b *bareMetalInventory) GenerateClusterISO(ctx context.Context, params inst
 			log.Fatal(err)
 		}
 		log.Println(cmd.Stdout)
-	} else {
+	} else {	
+		// Kill the previous job in case it's still running
+		prevJobName := fmt.Sprintf("createimage-%s-%s", cluster.ID, previousCreatedAt.Format("20060102150405"))
+		log.Info("Attempting to delete job %s", prevJobName)
+		if err := b.job.Delete(ctx, prevJobName, b.Namespace); err != nil {
+			log.WithError(err).Errorf("failed to kill previous job in cluster %s", cluster.ID)
+			return installer.NewGenerateClusterISOInternalServerError().
+				WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+		}
+		log.Info("Finished attempting to delete job %s", prevJobName)
+
 		if err := b.job.Create(ctx, b.createImageJob(jobName, imgName, ignitionConfig)); err != nil {
 			log.WithError(err).Error("failed to create image job")
 			return installer.NewGenerateClusterISOInternalServerError().
