@@ -114,9 +114,9 @@ deploy-disconnected:
 	podman volume create s3-volume
 	podman run -dt --pod assisted-installer --env-file disconnected-environment -v s3-volume:/mnt/data:rw --name s3 scality/s3server:latest
 	podman run -dt --pod assisted-installer --env-file disconnected-environment --name mariadb mariadb:latest
-	sleep 15
+	podman run -dt --pod assisted-installer --env-file disconnected-environment --name ui -v $(PWD)/deploy/ui/nginx.conf:/opt/bitnami/nginx/conf/server_blocks/nginx.conf:z quay.io/ocpmetal/ocp-metal-ui:latest
+	sleep 30
 	podman run -dt --pod assisted-installer --env-file disconnected-environment --name installer ${SERVICE}
-	podman run -dt --pod assisted-installer --env-file disconnected-environment --name ui quay.io/ocpmetal/ocp-metal-ui:latest
 
 clean-disconnected:
 	podman pod rm -f assisted-installer
