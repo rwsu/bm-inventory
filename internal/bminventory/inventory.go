@@ -157,7 +157,22 @@ func generateDummyISOImage(jobApi job.API, b *bareMetalInventory, log logrus.Fie
 	jobName := fmt.Sprintf("dummyimage-%s-%s", dummyId, time.Now().Format("20060102150405"))
 	imgName := fmt.Sprintf("discovery-image-%s", dummyId)
 	if b.Config.Target == "disconnected" {
-		// TBD with MGMT-1175
+		cmd := exec.Command("python", "./data/install_process.py")
+		cmd.Env = append(os.Environ(),
+			"S3_ENDPOINT_URL="+b.S3EndpointURL,
+			"IGNITION_CONFIG=Dummy",
+			"IMAGE_NAME="+jobName,
+			"S3_BUCKET="+b.S3Bucket,
+			"aws_access_key_id="+b.AwsAccessKeyID,
+			"aws_secret_access_key="+b.AwsSecretAccessKey,
+			"WORK_DIR=/data",
+		)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
+		}
+		log.Println(cmd.Stdout)
 	} else {
 		if err := jobApi.Create(context.Background(), b.createImageJob(jobName, imgName, "Dummy")); err != nil {
 			log.WithError(err).Errorf("failed to generate dummy ISO image")
@@ -416,17 +431,6 @@ func (b *bareMetalInventory) GenerateClusterISO(ctx context.Context, params inst
 		return installer.NewGenerateClusterISOInternalServerError()
 	}
 	txSuccess = true
-
-	// Kill the previous job in case it's still running
-	prevJobName := fmt.Sprintf("createimage-%s-%s", cluster.ID, previousCreatedAt.Format("20060102150405"))
-	log.Info("Attempting to delete job %s", prevJobName)
-	if err := b.job.Delete(ctx, prevJobName, b.Namespace); err != nil {
-		log.WithError(err).Errorf("failed to kill previous job in cluster %s", cluster.ID)
-		return installer.NewGenerateClusterISOInternalServerError().
-			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
-	}
-	log.Info("Finished attempting to delete job %s", prevJobName)
-
 	ignitionConfig, formatErr := b.formatIgnitionFile(&cluster, params)
 	if formatErr != nil {
 		log.WithError(formatErr).Errorf("failed to format ignition config file for cluster %s", cluster.ID)
@@ -438,16 +442,44 @@ func (b *bareMetalInventory) GenerateClusterISO(ctx context.Context, params inst
 	jobName := fmt.Sprintf("createimage-%s-%s", cluster.ID, now.Format("20060102150405"))
 	imgName := getImageName(params.ClusterID)
 	log.Infof("Creating job %s", jobName)
-	if err := b.job.Create(ctx, b.createImageJob(jobName, imgName, ignitionConfig)); err != nil {
-		log.WithError(err).Error("failed to create image job")
-		return installer.NewGenerateClusterISOInternalServerError().
-			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
-	}
+	if b.Config.Target == "disconnected" {
+		cmd := exec.Command("python", "./data/install_process.py")
+		cmd.Env = append(os.Environ(),
+			"S3_ENDPOINT_URL="+b.S3EndpointURL,
+			"IGNITION_CONFIG="+ignitionConfig,
+			"IMAGE_NAME="+jobName,
+			"S3_BUCKET="+b.S3Bucket,
+			"aws_access_key_id="+b.AwsAccessKeyID,
+			"aws_secret_access_key="+b.AwsSecretAccessKey,
+			"WORK_DIR=/data",
+		)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
+		}
+		log.Println(cmd.Stdout)
+	} else {	
+		// Kill the previous job in case it's still running
+		prevJobName := fmt.Sprintf("createimage-%s-%s", cluster.ID, previousCreatedAt.Format("20060102150405"))
+		log.Info("Attempting to delete job %s", prevJobName)
+		if err := b.job.Delete(ctx, prevJobName, b.Namespace); err != nil {
+			log.WithError(err).Errorf("failed to kill previous job in cluster %s", cluster.ID)
+			return installer.NewGenerateClusterISOInternalServerError().
+				WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+		}
+		log.Info("Finished attempting to delete job %s", prevJobName)
 
-	if err := b.job.Monitor(ctx, jobName, b.Namespace); err != nil {
-		log.WithError(err).Error("image creation failed")
-		return installer.NewGenerateClusterISOInternalServerError().
-			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+		if err := b.job.Create(ctx, b.createImageJob(jobName, imgName, ignitionConfig)); err != nil {
+			log.WithError(err).Error("failed to create image job")
+			return installer.NewGenerateClusterISOInternalServerError().
+				WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+		}
+		if err := b.job.Monitor(ctx, jobName, b.Namespace); err != nil {
+			log.WithError(err).Error("image creation failed")
+			return installer.NewGenerateClusterISOInternalServerError().
+				WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+		}
 	}
 
 	log.Infof("Generated cluster <%s> image with ignition config %s", params.ClusterID, ignitionConfig)
