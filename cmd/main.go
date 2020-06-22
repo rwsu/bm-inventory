@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -126,16 +127,11 @@ func main() {
 
 	var jobAPI job.API
 
-	if Options.Target == "disconnected" || Options.UseK8s {
-		if err = s3wrapper.CreateBucket(&Options.S3Config); err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	if Options.Target != "disconnected" {
-
 		var kclient client.Client
 		if Options.UseK8s {
+			createS3Bucket(&Options.S3Config)
+
 			scheme := runtime.NewScheme()
 			if err = clientgoscheme.AddToScheme(scheme); err != nil {
 				log.Fatal("Failed to add K8S scheme", err)
@@ -152,6 +148,11 @@ func main() {
 		}
 
 		jobAPI = job.New(log.WithField("pkg", "k8s-job-wrapper"), kclient, Options.JobConfig)
+	} else {
+		// in disconnected mode, setup s3 and use localjob implementation
+		createS3Bucket(&Options.S3Config)
+
+		jobAPI = job.NewLocalJob(log.WithField("pkg", "local-job-wrapper"), Options.JobConfig)
 	}
 	bm := bminventory.NewBareMetalInventory(db, log.WithField("pkg", "Inventory"), hostApi, clusterApi, Options.BMConfig, jobApi, eventsHandler, s3Client, metricsManager)
 
@@ -188,4 +189,10 @@ func main() {
 	}
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", swag.StringValue(port)), h))
+}
+
+func createS3Bucket(s3config *s3wrapper.Config) {
+	if err := s3wrapper.CreateBucket(&Options.S3Config); err != nil {
+		log.Fatal(err)
+	}
 }
