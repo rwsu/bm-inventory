@@ -74,6 +74,22 @@ func (j *localJob) executeKubeconfigJob(job *batch.Job) error {
 
 func (j *localJob) executeImageJob(job *batch.Job) error {
 	// TBD with MGMT-1175
+	cmd := exec.Command("python", "./data/install_process.py")
+	cmd.Env = append(os.Environ(),
+		"S3_ENDPOINT_URL="+job.Spec.Template.Spec.Containers[0].Env[0].Value,
+		"IGNITION_CONFIG="+job.Spec.Template.Spec.Containers[0].Env[1].Value,
+		"IMAGE_NAME="+job.Spec.Template.Spec.Containers[0].Env[2].Value,
+		"S3_BUCKET="+job.Spec.Template.Spec.Containers[0].Env[3].Value,
+		"aws_access_key_id="+job.Spec.Template.Spec.Containers[0].Env[4].Value,
+		"aws_secret_access_key="+job.Spec.Template.Spec.Containers[0].Env[5].Value,
+		"WORK_DIR=/data",
+	)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
+	log.Println(cmd.Stdout)
 	return nil
 }
 
