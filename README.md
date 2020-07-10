@@ -171,7 +171,7 @@ The tag is not validated, so you need to make sure it actually exists.
 Default tag is latest
 
 
-### Deploy without a Kuberentes cluster
+### Deploy without a Kubernetes cluster
 
 The assisted installer can also be deployed without using a Kubernetes cluster. In this scenario the installer and associated services are deployed onto your local host as a pod using Podman.
 
