@@ -175,8 +175,7 @@ deploy-onprem:
 	podman volume create s3-volume
 	podman run -dt --pod assisted-installer --env-file onprem-environment -v s3-volume:/mnt/data:rw --name s3 scality/s3server:latest
 	podman run -dt --pod assisted-installer --env-file onprem-environment --name mariadb mariadb:latest
-	sleep 15
-	podman run -dt --pod assisted-installer --env-file onprem --name installer ${SERVICE}
+	podman run -dt --pod assisted-installer --env-file onprem-environment --restart always --name installer ${SERVICE}
 	podman run -dt --pod assisted-installer --env-file onprem-environment --name ui quay.io/ocpmetal/ocp-metal-ui:latest
 
 clean-onprem:

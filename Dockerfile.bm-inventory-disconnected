@@ -9,13 +9,9 @@ ARG WORK_DIR=/data
 
 LABEL "git_revision"=${GIT_REVISION}
 
-RUN dnf install -y python pip libvirt-devel
-RUN pip install boto3
-RUN pip install botocore
+RUN dnf install -y python pip libvirt-devel && dnf clean all && pip install boto3 botocore
 
-
-RUN mkdir $WORK_DIR
-RUN chmod 777 $WORK_DIR
+RUN mkdir $WORK_DIR && chmod 777 $WORK_DIR
 
 # [TODO] - change this line to use openshift-installer from the release, once we are ready
 COPY --from=openshift-installer /root/installer/openshift-install $WORK_DIR
