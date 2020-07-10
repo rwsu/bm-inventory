@@ -171,6 +171,35 @@ The tag is not validated, so you need to make sure it actually exists.
 Default tag is latest
 
 
+### Deploy without a Kuberentes cluster
+
+The assisted installer can also be deployed without using a Kubernetes cluster. In this scenario the installer and associated services are deployed onto your local host as a pod using Podman.
+
+This type of deployment requires a different installer image that combines components that are used to generate the installer ISO and configuration files. First build and push this image to a repository using Dockerfile.bm-inventory-onprem:
+
+`skipper make all`
+`podman build -f Dockerfile.bm-inventory-onprem -t quay.io/<your-org>/bm-inventory:latest . `
+`podman push quay.io/<your-org>/bm-inventory:latest`
+`export SERVICE=quay.io/<your-org>/bm-inventory:latest`
+
+To deploy:
+
+`make deploy-onprem`
+
+Check all containers are running:
+
+`podman ps -a`
+
+The UI is available at http://<local-ip-address>:8080.
+
+To clean:
+
+`make clean-onprem`
+
+To run the tests:
+
+`make test-onprem`
+
 ## Troubleshooting
 
 A document that can assist troubleshooting: [link](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw)
