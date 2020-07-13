@@ -623,8 +623,16 @@ var _ = Describe("cluster", func() {
 	set4GetMasterNodesIds := func(mockClusterApi *cluster.MockAPI) {
 		mockClusterApi.EXPECT().GetMasterNodesIds(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*strfmt.UUID{&masterHostId1, &masterHostId2, &masterHostId3, &masterHostId4}, nil)
 	}
-	setDefaultHostInstall := func(mockClusterApi *cluster.MockAPI) {
-		mockHostApi.EXPECT().Install(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	setDefaultHostInstall := func(mockClusterApi *cluster.MockAPI, done chan int) {
+		count := 0
+		mockHostApi.EXPECT().Install(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(3).
+			Do(func(ctx context.Context, h *models.Host, db *gorm.DB) {
+				count += 1
+				if count == 3 {
+					done <- 1
+				}
+			})
+
 	}
 	validateHostInventory := func(mockClusterApi *cluster.MockAPI) {
 		sufficient := validators.IsSufficientReply{IsSufficient: true}
@@ -1030,12 +1038,11 @@ var _ = Describe("cluster", func() {
 		})
 
 		It("cluster failed to update", func() {
+			mockJob.EXPECT().GenerateInstallConfig(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			validateHostInventory(mockClusterApi)
 			mockIsInstallable()
 			mockClusterPrepareForInstallationSuccess(mockClusterApi)
 			mockHostPrepareForInstallationSuccess(mockHostApi, 3)
-			setDefaultJobCreate(mockJob)
-			setDefaultJobMonitor(mockJob)
 			setIgnitionGeneratorVersionSuccess(mockClusterApi)
 			mockHandlePreInstallationError(mockClusterApi, DoneChannel)
 			mockClusterApi.EXPECT().GetMasterNodesIds(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*strfmt.UUID{&masterHostId1, &masterHostId2, &masterHostId3}, nil)
@@ -1068,14 +1075,13 @@ var _ = Describe("cluster", func() {
 		})
 
 		It("host failed to install", func() {
+			mockJob.EXPECT().GenerateInstallConfig(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockClusterPrepareForInstallationSuccess(mockClusterApi)
 			mockHostPrepareForInstallationSuccess(mockHostApi, 3)
 			mockIsInstallable()
 			validateHostInventory(mockClusterApi)
 			setDefaultInstall(mockClusterApi)
 			setDefaultGetMasterNodesIds(mockClusterApi, 2)
-			setDefaultJobCreate(mockJob)
-			setDefaultJobMonitor(mockJob)
 			setIgnitionGeneratorVersionSuccess(mockClusterApi)
 
 			mockHostApi.EXPECT().Install(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1092,13 +1098,12 @@ var _ = Describe("cluster", func() {
 		})
 
 		It("list of masters for setting bootstrap return empty list", func() {
+			mockJob.EXPECT().GenerateInstallConfig(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockClusterPrepareForInstallationSuccess(mockClusterApi)
 			mockHostPrepareForInstallationSuccess(mockHostApi, 3)
 			mockIsInstallable()
 			validateHostInventory(mockClusterApi)
 			setDefaultInstall(mockClusterApi)
-			setDefaultJobCreate(mockJob)
-			setDefaultJobMonitor(mockJob)
 			setIgnitionGeneratorVersionSuccess(mockClusterApi)
 			// first call is for verifyClusterNetworkConfig
 			mockClusterApi.EXPECT().GetMasterNodesIds(gomock.Any(), gomock.Any(), gomock.Any()).

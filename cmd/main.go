@@ -64,6 +64,7 @@ var Options struct {
 	ImageExpirationInterval     time.Duration `envconfig:"IMAGE_EXPIRATION_INTERVAL" default:"30m"`
 	ImageExpirationTime         time.Duration `envconfig:"image_expiration_time" default:"60m"`
 	ClusterConfig               cluster.Config
+	Target                      string `envconfig:"TARGET" default:""`
 }
 
 func main() {
@@ -127,7 +128,7 @@ func main() {
 
 	var generator job.ISOInstallConfigGenerator
 
-	if Options.Target != "disconnected" {
+	if Options.Target != "onprem" {
 		var kclient client.Client
 		if Options.UseK8s {
 			createS3Bucket(&Options.S3Config)
@@ -149,7 +150,7 @@ func main() {
 
 		generator = job.New(log.WithField("pkg", "k8s-job-wrapper"), kclient, Options.JobConfig)
 	} else {
-		// in disconnected mode, setup s3 and use localjob implementation
+		// in on-prem mode, setup s3 and use localjob implementation
 		createS3Bucket(&Options.S3Config)
 		generator = job.NewLocalJob(log.WithField("pkg", "local-job-wrapper"), Options.JobConfig)
 	}
