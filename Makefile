@@ -178,8 +178,8 @@ clear-deployment:
 
 deploy-disconnected:
 	podman pod create --name assisted-installer -p 3306,8000,8090,8080
-	podman volume create s3-volume
-	podman run -dt --pod assisted-installer --env-file disconnected-environment -v s3-volume:/mnt/data:rw --name s3 scality/s3server:latest
+	#podman volume create s3-volume
+	podman run -dt --pod assisted-installer --env-file disconnected-environment --mount type=tmpfs,target=/mnt/data --name s3 scality/s3server:latest
 	podman run -dt --pod assisted-installer --env-file disconnected-environment --name mariadb mariadb:latest
 	podman run -dt --pod assisted-installer --env-file disconnected-environment --name ui -v $(PWD)/deploy/ui/nginx.conf:/opt/bitnami/nginx/conf/server_blocks/nginx.conf:z quay.io/ocpmetal/ocp-metal-ui:latest
 	sleep 30
@@ -187,7 +187,7 @@ deploy-disconnected:
 
 clean-disconnected:
 	podman pod rm -f assisted-installer
-	podman volume rm s3-volume
+	#podman volume rm s3-volume
 
 test-disconnected:
 	INVENTORY=127.0.0.1:8090 \
