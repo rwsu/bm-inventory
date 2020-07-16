@@ -176,7 +176,7 @@ deploy-onprem:
 	podman run -dt --pod assisted-installer --env-file onprem-environment -v s3-volume:/mnt/data:rw --name s3 scality/s3server:latest
 	podman run -dt --pod assisted-installer --env-file onprem-environment --name mariadb mariadb:latest
 	podman run -dt --pod assisted-installer --env-file onprem-environment --restart always --name installer ${SERVICE}
-	podman run -dt --pod assisted-installer --env-file onprem-environment --name ui quay.io/ocpmetal/ocp-metal-ui:latest
+	podman run -dt --pod assisted-installer --env-file onprem-environment --name ui -v $(PWD)/deploy/ui/nginx.conf:/opt/bitnami/nginx/conf/server_blocks/nginx.conf:z quay.io/ocpmetal/ocp-metal-ui:latest
 
 clean-onprem:
 	podman pod rm -f assisted-installer
